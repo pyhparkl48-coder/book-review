@@ -1,70 +1,85 @@
 # 문장 사이 — 개인 독서 기록장
 
-책을 읽고 기록을 남긴 뒤, AI 질문에 답하며 생각을 쌓아가는 개인용 독서 웹사이트입니다.
+기존 독서 UI와 기능을 사용하는 표준 Next.js App Router 프로젝트입니다.
 
-## 실행
+## 로컬 실행
 
-Node.js 22.13 이상과 pnpm을 사용합니다.
+Node.js 22 LTS와 pnpm 11을 사용합니다.
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm preview:build
-pnpm preview:local
+pnpm dev
 ```
 
-서버를 실행한 컴퓨터에서 http://127.0.0.1:5173/ 에 접속합니다. 서버가 종료되면 접속할 수 없습니다. 이 주소는 외부에 공개된 웹사이트 주소가 아닙니다. 이 저장소에 소스를 업로드하는 것만으로 사이트가 배포되지는 않습니다.
+http://localhost:3000 에 접속합니다. 첫 실행 시 예시 도서와 독서 기록이 표시됩니다.
 
-일반 프레임워크 개발 환경에서는 `pnpm dev`, Cloudflare Worker 빌드는 `pnpm build`를 사용합니다. 제한된 Windows 환경에서는 위의 로컬 실행 방식을 사용하세요.
+프로덕션 실행:
 
-## 기능
+```sh
+pnpm build
+pnpm start
+```
+
+## Vercel 배포 설정
+
+| 항목 | 설정 |
+| --- | --- |
+| Framework Preset | Next.js (자동 감지) |
+| Root Directory | 이 README와 package.json이 있는 폴더 |
+| Install Command | pnpm install --frozen-lockfile |
+| Build Command | pnpm build |
+| Output Directory | 기본값 유지 — 직접 지정하지 않음 |
+| Node.js Version | 22.x |
+
+ZIP 안의 `book-review` 폴더 **내용**을 저장소 최상위에 올렸다면 Root Directory는 저장소 루트(`.`)입니다. 폴더째 올렸다면 `book-review`를 지정하세요. 기존 Vite 설정의 `dist`, `dist/client`, `out` 같은 Output Directory 재정의와 옛 Build Command를 해제하고 재배포하세요.
+
+별도 vercel.json, 정적 export, Cloudflare Worker, Sites 설정은 필요하지 않습니다. `/`는 `app/page.tsx`, `/api/coach`는 `app/api/coach/route.ts`가 처리합니다.
+
+## AI 환경변수
+
+로컬에서는 `.env.example`을 `.env.local`로 복사하고 값을 설정합니다. Vercel에서는 Project Settings → Environment Variables에 다음을 추가한 뒤 재배포합니다.
+
+- `OPENAI_API_KEY`: 서버용 OpenAI API 키
+- `OPENAI_MODEL`: 선택, 기본값 `gpt-4.1-mini`
+
+키에 `NEXT_PUBLIC_` 접두사를 사용하지 마세요. API는 Node.js 런타임에서만 환경변수를 읽습니다. API 함수의 최대 실행 시간은 60초이며 외부 호출은 55초 후 중단합니다.
+
+키가 없어도 책·독서 기록·답변 저장은 작동합니다. AI가 실패하면 원문을 유지하고 안내를 표시합니다. AI를 사용할 때 현재 원문과 같은 책의 이전 기록 최대 12개 및 관련 Q&A가 OpenAI API로 전송됩니다. 실제 AI 응답 검증에는 유효한 API 키가 필요합니다.
+
+## 유지된 기능
 
 - 책 추가·수정·삭제, 선택적 표지 이미지
 - 날짜와 페이지별 독서 기록, 진행률 자동 계산
 - 원문 보존과 정리 결과 직접 편집
-- 서버 API를 통한 AI 정리 및 심화 질문 생성
-- 같은 책의 이전 기록과 Q&A를 고려한 질문
+- AI 정리 및 이전 기록을 참고한 심화 질문
 - 질문별 답변 저장, 질문 삭제와 추가 생성
 - 작성 중인 기록과 답변 임시 저장
-- 삭제 확인, 브라우저 저장, JSON 백업 다운로드
-- 모바일 반응형 화면
-
-첫 실행 시 예시 도서와 예시 기록이 표시됩니다. 예시 질문은 실제 AI 호출 결과가 아닌 샘플입니다.
-
-## AI 연결
-
-`.env.example`을 `.env`로 복사하고 서버에서만 키를 설정합니다.
-
-```dotenv
-OPENAI_API_KEY=your_server_side_key
-OPENAI_MODEL=gpt-4.1-mini
-```
-
-설정 후 로컬 서버를 다시 시작하세요. 배포 환경에서는 동일한 이름의 서버 비밀 환경변수를 사용합니다. 키를 프론트엔드 코드나 Git에 넣지 마세요.
-
-키가 없어도 책·독서 기록·답변 저장은 작동합니다. AI가 실패하면 원문을 유지하고 재시도 안내를 표시합니다. AI를 사용할 때 현재 원문과 같은 책의 이전 기록 최대 12개 및 관련 Q&A가 OpenAI API로 전송됩니다. 실 API 응답은 키 설정 후 검증해야 합니다.
+- 삭제 확인, JSON 백업 다운로드, 모바일 반응형 화면
 
 ## 저장 방식
 
-현재 데이터는 해당 브라우저의 localStorage에 저장됩니다. 다른 브라우저·기기와 자동 동기화되지 않으며, 사이트 주소가 달라지면 별도의 저장 공간을 사용합니다. 브라우저 데이터를 삭제하면 기록도 삭제되므로 백업 다운로드를 활용하세요. 다운로드한 JSON은 보관용이며 UI 가져오기 기능은 아직 없습니다.
+데이터는 해당 브라우저의 localStorage에 저장됩니다. 다른 브라우저·기기·사이트 주소와 자동 동기화되지 않습니다. localhost에서 Vercel 주소로 옮겨도 기존 기록은 자동 이전되지 않습니다. 브라우저 데이터 삭제 시 기록도 삭제되므로 백업 다운로드를 활용하세요. JSON 가져오기 기능은 아직 없습니다.
 
-개인 기록과 API 키는 이 저장소에 포함하지 않습니다.
+## 구조
 
-## 코드 구조
+- `app/page.tsx`, `app/layout.tsx`: App Router 홈과 루트 레이아웃
+- `app/components/`: 기존 책장·작성 창·기록·답변 UI
+- `app/globals.css`: 기존 디자인
+- `app/lib/`: 데이터 모델·저장소·AI 요청과 서버 처리
+- `app/api/coach/route.ts`: Next.js 서버 API
+- `components/`, `hooks/`, `lib/utils.ts`: 재사용 UI와 유틸리티
+- `pnpm-lock.yaml`: 단일 의존성 잠금 파일
 
-- `app/components/`: 책장, 작성 창, 날짜별 기록과 답변 UI
-- `app/lib/types.ts`: Book, ReadingEntry, Question 모델
-- `app/lib/storage.ts`: 저장소 접근과 진행률 계산 연결
-- `app/lib/ai.ts`: 서버 호출 및 이전 기록 구성
-- `app/lib/server-coach.ts`: AI 지침, 서버 호출, 응답 검증
-- `app/api/coach/route.ts`: Cloudflare 환경의 API 진입점
-- `scripts/portable-preview.mjs`: 제한된 환경용 로컬 번들 생성
-- `scripts/local-server.mjs`: 로컬 웹 및 AI API 서버
+검증 명령은 `pnpm typecheck`, `pnpm build`입니다. GitHub 업로드나 실제 Vercel 배포는 로컬 코드 변경과 별도 작업입니다.
 
-## 확인
+## 이번 전환 검증
 
-```sh
-pnpm typecheck
-pnpm preview:build
-```
+- `pnpm install --frozen-lockfile --offline`: 통과
+- `pnpm typecheck`: 통과
+- `pnpm build`: 통과, `/` 정적 페이지와 `/api/coach` 서버 API 생성
+- `pnpm start --port 3000`: 프로덕션 서버 실행 확인
+- `/`: HTTP 200, JS/CSS 자산 8개 모두 HTTP 200
+- 실제 브라우저: 책장 렌더링 및 책 상세 페이지 이동 확인
+- API 키 미설정: `/api/coach`가 JSON 503 안내를 반환하는 것 확인
 
-Cloudflare 기반 정식 배포와 실제 AI 호출 검증은 아직 완료되지 않았습니다.
+Windows의 제한된 실행 환경에서는 `next.config.ts`가 Next.js 내장 worker threads와 TypeScript API 검사를 사용합니다. 타입 검사를 생략하지 않으며 Vercel의 Linux 환경은 기본 빌드 설정을 사용합니다. 실제 Vercel 배포와 API 키를 사용한 AI 호출은 이 검증에 포함되지 않습니다.
